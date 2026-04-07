@@ -1,4 +1,4 @@
-name: test
+name: xc7
 
 channels:
   - litex-hub
