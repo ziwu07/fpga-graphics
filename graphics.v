@@ -1,4 +1,4 @@
-module top (
+module graphics (
     input wire [12:0] address_bus,
     input wire cpu_clk,
     input wire cpu_rw,
@@ -8,7 +8,8 @@ module top (
     output reg [4:0] dac_red,
     output reg [4:0] dac_green,
     output reg [4:0] dac_blue,
-    output reg vsync,  // WARN: invert both hsync and vsync and tie the original pin to low. (both active low but need to be high during init)
+    // WARN: invert both hsync and vsync and tie the original pin to low. (both active low but need to be high during init)
+    output reg vsync,
     output reg hsync,
     output reg ready
 );
@@ -21,7 +22,7 @@ module top (
 
   reg [7:0] data_out;
   reg [7:0] data_in;
-  assign data_bus = (cpu_rw == 1) && (cpu_ce == 1) ? data_out : 8'bz;
+  assign data_bus = (cpu_rw == 1) && (cpu_ce == 1) ? data_out : 8'bzzzzzzzz;
 
 
   // CPU reads
@@ -80,9 +81,9 @@ module top (
 
   reg [3:0] graphics_mode;
   reg flip;
-  localparam ROWS = 16'h2000 / 2;
+  localparam integer ROWS = 16'h2000 / 2;
   (* ram_style= "block" *)
-  reg [15:0] vram[0:2*ROWS-1];
+  reg [15:0] vram[2*ROWS-1];
   reg active_vram;  // the one that is currently actively outputed
 
   initial begin

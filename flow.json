@@ -1,7 +1,7 @@
 {
   "default_part": "XC7A35TCPG236-1",
   "values": {
-    "top": "top"
+    "top": "graphics"
   },
   "dependencies": {
     "sources": [
