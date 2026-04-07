@@ -1,0 +1,4 @@
+*.log
+build/
+*.data
+.f4cache

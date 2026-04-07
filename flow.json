@@ -1,0 +1,22 @@
+{
+  "default_part": "XC7A35TCPG236-1",
+  "values": {
+    "top": "top"
+  },
+  "dependencies": {
+    "sources": [
+      "graphics.v"
+    ],
+    "pack_log": "build/cmod_a7/pack.log",
+    "synth_log": "build/cmod_a7/synth.log"
+  },
+  "XC7A35TCPG236-1": {
+    "default_target": "bitstream",
+    "dependencies": {
+      "build_dir": "build/cmod_a7",
+      "xdc": [
+        "Cmod-A7-Master.xdc"
+      ]
+    }
+  }
+}

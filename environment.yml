@@ -1,0 +1,18 @@
+name: test
+
+channels:
+  - litex-hub
+
+dependencies:
+  - litex-hub::prjxray-tools
+  - litex-hub::gcc-riscv64-elf-newlib
+  - litex-hub::prjxray-db
+  - litex-hub::vtr-optimized
+  - litex-hub::yosys
+  - litex-hub::symbiflow-yosys-plugins
+  - lxml
+  - simplejson
+  - intervaltree
+  - pip
+  - pip:
+      - -r requirements.txt
