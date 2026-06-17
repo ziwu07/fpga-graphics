@@ -11,7 +11,9 @@ module graphics (
     // WARN: invert both hsync and vsync and tie the original pin to low. (both active low but need to be high during init)
     output reg vsync,
     output reg hsync,
-    output reg ready
+    output reg ready,
+    output reg blank,
+    output wire vga_clk_out
 );
 
   // for startup (no voltage during startup)
@@ -79,6 +81,8 @@ module graphics (
       .RST     (1'b0)
   );
 
+  assign vga_clk_out = vga_clk;
+
   reg [3:0] graphics_mode;
   reg flip;
   localparam integer ROWS = 16'h2000 / 2;
@@ -111,10 +115,10 @@ module graphics (
   reg [11:0] next_offset;
   reg [3:0] row_start_bit_select;
   reg [11:0] row_start_offset;
-  reg [12:0] prefetch_addr;
+  reg pix_odd;
 
-  always @(posedge vga_clk) begin
-    value <= vram[prefetch_addr];
+  always @(negedge vga_clk) begin
+    value <= vram[{active_vram, next_offset}];
     if (locked) begin
       case (1'b1)
         (vcount < 480): begin
@@ -122,17 +126,22 @@ module graphics (
             (hcount < 640): begin
               hsync <= 1'b0;
               vsync <= 1'b0;
+              blank <= 1'b1;
               // Custom sub resolution
-              if (hcount < 292 * 2 && vcount < 219 * 2) begin
+              if (hcount < 306 * 2 && hcount >= 14 * 2 && vcount < 229 * 2 && vcount >= 10 * 2) begin
                 dac_red   <= (value >> next_bit_select) & 1'b1 ? 5'b11111 : 5'b0;
                 dac_green <= (value >> next_bit_select) & 1'b1 ? 5'b11111 : 5'b0;
                 dac_blue  <= (value >> next_bit_select) & 1'b1 ? 5'b11111 : 5'b0;
-                if (next_bit_select == 15) begin
-                  next_bit_select <= 0;
-                  next_offset <= next_offset + 1;
-                  prefetch_addr <= {active_vram, next_offset + 1};
+                if (pix_odd == 1) begin
+                  if (next_bit_select == 15) begin
+                    next_bit_select <= 0;
+                    next_offset <= next_offset + 1;
+                  end else begin
+                    next_bit_select <= next_bit_select + 1;
+                  end
+                  pix_odd <= 1'b0;
                 end else begin
-                  next_bit_select <= next_bit_select + 1;
+                  pix_odd <= 1'b1;
                 end
               end else begin
                 dac_red   <= 5'b0;
@@ -146,6 +155,7 @@ module graphics (
               dac_red <= 5'b0;
               dac_green <= 5'b0;
               dac_blue <= 5'b0;
+              blank <= 1'b0;
             end
             default: begin
               hsync <= 1'b0;
@@ -153,6 +163,7 @@ module graphics (
               dac_red <= 5'b0;
               dac_green <= 5'b0;
               dac_blue <= 5'b0;
+              blank <= 1'b1;
             end
           endcase
         end
@@ -166,6 +177,7 @@ module graphics (
           dac_red <= 5'b0;
           dac_green <= 5'b0;
           dac_blue <= 5'b0;
+          blank <= 1'b0;
         end
         default: begin
           if (hcount >= 656 && hcount < 752) begin
@@ -177,15 +189,13 @@ module graphics (
           dac_red <= 5'b0;
           dac_green <= 5'b0;
           dac_blue <= 5'b0;
+          blank <= 1'b0;
         end
       endcase
       if (hcount == 798 && vcount == 524) begin
         if (flip) begin
           flip <= 1'b0;
           active_vram <= ~active_vram;
-          prefetch_addr <= {~active_vram, 12'b0};
-        end else begin
-          prefetch_addr <= {active_vram, 12'b0};
         end
       end
       if (hcount >= 799) begin
@@ -193,6 +203,8 @@ module graphics (
           vcount <= 10'h0;
           next_bit_select <= 4'b0;
           next_offset <= 12'b0;
+          row_start_offset <= 12'b0;
+          row_start_bit_select <= 4'b0;
         end else begin
           if (vcount[0] == 0) begin
             row_start_offset <= next_offset;
@@ -203,7 +215,8 @@ module graphics (
           end
           vcount <= vcount + 10'h1;
         end
-        hcount <= 10'h0;
+        hcount  <= 10'h0;
+        pix_odd <= 1'b0;
       end else begin
         hcount <= hcount + 10'h1;
       end
@@ -216,7 +229,8 @@ module graphics (
       row_start_offset <= 12'b0;
       value <= 16'b0;
       color <= 1'b0;
-      prefetch_addr <= 13'b0;
+      blank <= 1'b0;
+      pix_odd <= 1'b0;
     end
   end
 
