@@ -4,6 +4,7 @@ module graphics (
     input wire cpu_rw,
     input wire cpu_ce,
     input wire sysclk,
+    input wire btn0,
     inout wire [7:0] data_bus,
     output reg [4:0] dac_red,
     output reg [4:0] dac_green,
@@ -63,10 +64,10 @@ module graphics (
   wire locked;
 
   MMCME2_ADV #(
-      .CLKIN1_PERIOD     (83.33),        // 12 MHz
-      .CLKFBOUT_MULT_F   (50.375),       // VCO = 604.5 MHz
+      .CLKIN1_PERIOD     (83.33),
+      .CLKFBOUT_MULT_F   (9),
       .DIVCLK_DIVIDE     (1),
-      .CLKOUT0_DIVIDE_F  (24.0),         // ~25.1875 MHz
+      .CLKOUT0_DIVIDE_F  (4.290),
       .CLKOUT0_DUTY_CYCLE(0.5),
       .CLKOUT0_PHASE     (0.0),
       .BANDWIDTH         ("OPTIMIZED"),
@@ -107,15 +108,25 @@ module graphics (
     dac_green = 5'b0;
     dac_blue = 5'b0;
     flip = 1'b0;
+    flip_last = 1'b0;
   end
 
   reg [15:0] value;
-  reg color;
   reg [3:0] next_bit_select;
   reg [11:0] next_offset;
   reg [3:0] row_start_bit_select;
   reg [11:0] row_start_offset;
   reg pix_odd;
+
+  reg flip1;
+  reg flip2;
+  reg flip_last;
+
+  always @(posedge vga_clk) begin
+    flip1 <= btn0;
+    flip2 <= flip1;
+    flip  <= flip2;
+  end
 
   always @(negedge vga_clk) begin
     value <= vram[{active_vram, next_offset}];
@@ -128,7 +139,7 @@ module graphics (
               vsync <= 1'b0;
               blank <= 1'b1;
               // Custom sub resolution
-              if (hcount < 306 * 2 && hcount >= 14 * 2 && vcount < 229 * 2 && vcount >= 10 * 2) begin
+              if (hcount < 306 * 2 && hcount >= 14 * 2 && vcount < 229 * 2 && vcount >= 20) begin
                 dac_red   <= (value >> next_bit_select) & 1'b1 ? 5'b11111 : 5'b0;
                 dac_green <= (value >> next_bit_select) & 1'b1 ? 5'b11111 : 5'b0;
                 dac_blue  <= (value >> next_bit_select) & 1'b1 ? 5'b11111 : 5'b0;
@@ -157,13 +168,22 @@ module graphics (
               dac_blue <= 5'b0;
               blank <= 1'b0;
             end
+            (hcount == 799): begin
+              if (vcount[0] == 0) begin
+                next_offset <= row_start_offset;
+                next_bit_select <= row_start_bit_select;
+              end else begin
+                row_start_offset <= next_offset;
+                row_start_bit_select <= next_bit_select;
+              end
+            end
             default: begin
               hsync <= 1'b0;
               vsync <= 1'b0;
               dac_red <= 5'b0;
               dac_green <= 5'b0;
               dac_blue <= 5'b0;
-              blank <= 1'b1;
+              blank <= 1'b0;
             end
           endcase
         end
@@ -193,8 +213,8 @@ module graphics (
         end
       endcase
       if (hcount == 798 && vcount == 524) begin
-        if (flip) begin
-          flip <= 1'b0;
+        if (flip != flip_last) begin
+          flip_last   <= flip;
           active_vram <= ~active_vram;
         end
       end
@@ -206,13 +226,6 @@ module graphics (
           row_start_offset <= 12'b0;
           row_start_bit_select <= 4'b0;
         end else begin
-          if (vcount[0] == 0) begin
-            row_start_offset <= next_offset;
-            row_start_bit_select <= next_bit_select;
-          end else begin
-            next_offset <= row_start_offset;
-            next_bit_select <= row_start_bit_select;
-          end
           vcount <= vcount + 10'h1;
         end
         hcount  <= 10'h0;
@@ -227,8 +240,6 @@ module graphics (
       next_offset <= 12'b0;
       row_start_bit_select <= 4'b0;
       row_start_offset <= 12'b0;
-      value <= 16'b0;
-      color <= 1'b0;
       blank <= 1'b0;
       pix_odd <= 1'b0;
     end

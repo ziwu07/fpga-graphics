@@ -28,6 +28,9 @@ int main(int argc, char *argv[]) {
     fprintf(f, "%04x\n", buf[i]);
   }
   for (uint32_t i = 0; i < 4096; ++i) {
+    buf[i] ^= 0xFFFF;
+  }
+  for (uint32_t i = 0; i < 4096; ++i) {
     fprintf(f, "%04x\n", buf[i]);
   }
 
