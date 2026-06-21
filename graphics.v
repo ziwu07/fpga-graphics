@@ -17,16 +17,32 @@ module graphics (
     output wire vga_clk_out
 );
 
-  // for startup (no voltage during startup)
-  // initial begin
-  //   ready = 1'b1;
-  // end
   assign ready = locked;
 
   reg [7:0] data_out;
   reg [7:0] data_in;
   assign data_bus = (cpu_rw == 1) && (cpu_ce == 1) ? data_out : 8'bzzzzzzzz;
 
+  assign enaA = cpu_ce && (address_bus != 13'hFFF);
+
+  asym_ram_sdp_read_wider #(
+      .WIDTHA(8),
+      .SIZEA(16384),
+      .ADDRWIDTHA(14),
+      .WIDTHB(16),
+      .SIZEB(8192),
+      .ADDRWIDTHB(13)
+  ) vram (
+      .clkA (~cpu_clk),
+      .clkB (vga_clk),
+      .enaA (enaA),
+      .weA  (~cpu_rw),
+      .enaB (locked),
+      .addrA({~active_vram, address_bus}),
+      .addrB({active_vram, next_offset}),
+      .diA  (data_bus),
+      .doB  (value)
+  );
 
   // CPU reads
   always @(*) begin
@@ -50,8 +66,7 @@ module graphics (
   always @(negedge cpu_clk) begin
     if (cpu_ce && !cpu_rw) begin
       case (address_bus)
-        13'h0002: begin
-          data_in <= data_bus;
+        13'h0FFF: begin
         end
         default: begin
         end
@@ -65,9 +80,9 @@ module graphics (
 
   MMCME2_ADV #(
       .CLKIN1_PERIOD     (83.33),
-      .CLKFBOUT_MULT_F   (9),
+      .CLKFBOUT_MULT_F   (50.375),
       .DIVCLK_DIVIDE     (1),
-      .CLKOUT0_DIVIDE_F  (4.290),
+      .CLKOUT0_DIVIDE_F  (24),
       .CLKOUT0_DUTY_CYCLE(0.5),
       .CLKOUT0_PHASE     (0.0),
       .BANDWIDTH         ("OPTIMIZED"),
@@ -86,15 +101,11 @@ module graphics (
 
   reg [3:0] graphics_mode;
   reg flip;
-  localparam integer ROWS = 16'h2000 / 2;
-  (* ram_style= "block" *)
-  reg [15:0] vram[2*ROWS-1];
-  reg active_vram;  // the one that is currently actively outputed
+  reg active_vram;
 
   initial begin
     active_vram   = 1'b0;
     graphics_mode = 4'b0;
-    $readmemh("vram_init.data", vram);
   end
 
   reg [9:0] hcount;
@@ -107,6 +118,12 @@ module graphics (
     dac_red = 5'b0;
     dac_green = 5'b0;
     dac_blue = 5'b0;
+    next_bit_select <= 4'b0;
+    next_offset <= 12'b0;
+    row_start_bit_select <= 4'b0;
+    row_start_offset <= 12'b0;
+    blank <= 1'b0;
+    pix_odd <= 1'b0;
     flip = 1'b0;
     flip_last = 1'b0;
   end
@@ -129,7 +146,6 @@ module graphics (
   end
 
   always @(negedge vga_clk) begin
-    value <= vram[{active_vram, next_offset}];
     if (locked) begin
       case (1'b1)
         (vcount < 480): begin
@@ -233,15 +249,6 @@ module graphics (
       end else begin
         hcount <= hcount + 10'h1;
       end
-    end else begin
-      hcount <= 10'b0;
-      vcount <= 10'b0;
-      next_bit_select <= 4'b0;
-      next_offset <= 12'b0;
-      row_start_bit_select <= 4'b0;
-      row_start_offset <= 12'b0;
-      blank <= 1'b0;
-      pix_odd <= 1'b0;
     end
   end
 

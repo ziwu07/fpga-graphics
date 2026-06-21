@@ -5,7 +5,8 @@
   },
   "dependencies": {
     "sources": [
-      "graphics.v"
+      "graphics.v",
+      "asym_ram_sdp_read_wider.v"
     ],
     "pack_log": "build/cmod_a7/pack.log",
     "synth_log": "build/cmod_a7/synth.log"

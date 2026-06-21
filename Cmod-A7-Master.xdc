@@ -40,7 +40,7 @@ set_property -dict { PACKAGE_PIN A18   IOSTANDARD LVCMOS33 } [get_ports { btn0 }
 ## GPIO Pins
 ## Pins 15 and 16 should remain commented if using them as analog inputs
 set_property -dict { PACKAGE_PIN M3    IOSTANDARD LVCMOS33 } [get_ports { cpu_rw }]; #IO_L8N_T1_AD14N_35 Sch=pio[01]
-set_property -dict { PACKAGE_PIN L3    IOSTANDARD LVCMOS33 } [get_ports { ready }]; #IO_L8P_T1_AD14P_35 Sch=pio[02]
+set_property -dict { PACKAGE_PIN L3    IOSTANDARD LVCMOS33 } [get_ports { cpu_ce }]; #IO_L8P_T1_AD14P_35 Sch=pio[02]
 set_property -dict { PACKAGE_PIN A16   IOSTANDARD LVCMOS33 } [get_ports { hsync }]; #IO_L12P_T1_MRCC_16 Sch=pio[03]
 set_property -dict { PACKAGE_PIN K3    IOSTANDARD LVCMOS33 } [get_ports { vsync }]; #IO_L7N_T1_AD6N_35 Sch=pio[04]
 set_property -dict { PACKAGE_PIN C15   IOSTANDARD LVCMOS33 } [get_ports { vga_clk_out }]; #IO_L11P_T1_SRCC_16 Sch=pio[05]
@@ -82,7 +82,7 @@ set_property -dict { PACKAGE_PIN U3    IOSTANDARD LVCMOS33 } [get_ports { addres
 set_property -dict { PACKAGE_PIN U7    IOSTANDARD LVCMOS33 } [get_ports { address_bus[11] }]; #IO_L19P_T3_34 Sch=pio[45]
 set_property -dict { PACKAGE_PIN W7    IOSTANDARD LVCMOS33 } [get_ports { address_bus[12] }]; #IO_L13P_T2_MRCC_34 Sch=pio[46]
 set_property -dict { PACKAGE_PIN U8    IOSTANDARD LVCMOS33 } [get_ports { cpu_clk }]; #IO_L14P_T2_SRCC_34 Sch=pio[47]
-set_property -dict { PACKAGE_PIN V8    IOSTANDARD LVCMOS33 } [get_ports { cpu_ce }]; #IO_L14N_T2_SRCC_34 Sch=pio[48]
+set_property -dict { PACKAGE_PIN V8    IOSTANDARD LVCMOS33 } [get_ports { ready }]; #IO_L14N_T2_SRCC_34 Sch=pio[48]
 
 ## UART
 #set_property -dict { PACKAGE_PIN J18   IOSTANDARD LVCMOS33 } [get_ports { uart_rxd_out }]; #IO_L7N_T1_D10_14 Sch=uart_rxd_out
