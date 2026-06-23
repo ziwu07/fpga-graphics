@@ -4,7 +4,6 @@ module graphics (
     input wire cpu_rw,
     input wire cpu_ce,
     input wire sysclk,
-    input wire btn0,
     inout wire [7:0] data_bus,
     output reg [4:0] dac_red,
     output reg [4:0] dac_green,
@@ -20,7 +19,6 @@ module graphics (
   assign ready = locked;
 
   reg [7:0] data_out;
-  reg [7:0] data_in;
   assign data_bus = (cpu_rw == 1) && (cpu_ce == 1) ? data_out : 8'bzzzzzzzz;
 
   assign enaA = cpu_ce && (address_bus != 13'hFFF);
@@ -45,32 +43,28 @@ module graphics (
   );
 
   // CPU reads
-  always @(*) begin
-    data_out = 8'hFF;
-    if (cpu_ce && cpu_clk && cpu_rw) begin
-      case (address_bus)
-        13'h0000: begin
-          data_out = 8'hA5;
-        end
-        13'h0001: begin
-          data_out = data_in;
-        end
-        default: begin
-          data_out = 8'hFF;
-        end
-      endcase
-    end
-  end
+  // always @(*) begin
+  //   data_out = 8'hFF;
+  //   if (cpu_ce && cpu_clk && cpu_rw) begin
+  //     case (address_bus)
+  //       13'h0000: begin
+  //         data_out = 8'hA5;
+  //       end
+  //       default: begin
+  //         data_out = 8'hFF;
+  //       end
+  //     endcase
+  //   end
+  // end
+
+  reg sigflip;
 
   // CPU writes
   always @(negedge cpu_clk) begin
     if (cpu_ce && !cpu_rw) begin
-      case (address_bus)
-        13'h0FFF: begin
-        end
-        default: begin
-        end
-      endcase
+      if (address_bus == 13'h0FFF) begin
+        sigflip <= ~sigflip;
+      end
     end
   end
 
@@ -126,6 +120,8 @@ module graphics (
     pix_odd <= 1'b0;
     flip = 1'b0;
     flip_last = 1'b0;
+    sigflip = 1'b0;
+    flip1 = 1'b0;
   end
 
   reg [15:0] value;
@@ -136,13 +132,11 @@ module graphics (
   reg pix_odd;
 
   reg flip1;
-  reg flip2;
   reg flip_last;
 
   always @(posedge vga_clk) begin
-    flip1 <= btn0;
-    flip2 <= flip1;
-    flip  <= flip2;
+    flip1 <= sigflip;
+    flip  <= flip1;
   end
 
   always @(negedge vga_clk) begin
